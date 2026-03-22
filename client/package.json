@@ -1,0 +1,21 @@
+{
+  "name": "cat-emotion-ui",
+  "version": "1.0.0",
+  "description": "Cat Emotion UI",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.15.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.1",
+    "parcel": "^2.16.4",
+    "vite": "^8.0.1"
+  }
+}

@@ -1,0 +1,41 @@
+# CatSense AI — .gitignore
+
+# Dependencies
+node_modules/
+dist/
+.venv/
+vh/
+bin/
+lib/
+share/
+include/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Environments & Secrets
+.env
+.env.local
+.env.*.local
+! .env.enc
+! .env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large Assets
+models/
+datasets/
+outputs/
+research/outputs/
+*.keras
+*.mp3
+*.jpeg
+*.png
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
