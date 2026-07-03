@@ -1,6 +1,23 @@
+import os
+import gc
+
+# --- MEMORY OPTIMIZATIONS FOR RENDER FREE TIER ---
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+
+try:
+    import tensorflow as tf
+    tf.config.threading.set_intra_op_parallelism_threads(1)
+    tf.config.threading.set_inter_op_parallelism_threads(1)
+except:
+    pass
+# -------------------------------------------------
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import os
 import shutil
 import tempfile
 import uvicorn
@@ -120,6 +137,9 @@ async def load_models():
     
     if not loaded_disease:
         print("WARNING: No disease model found in expected locations.")
+
+    # Force garbage collection to free memory used during model initialization
+    gc.collect()
 
 
 
