@@ -21,7 +21,8 @@ def train_pipeline():
     le.fit(config.CATEGORIES) # Ensure all 10 classes are represented
     y_exp_train = to_categorical(le.transform(y_exp_labels), num_classes=10)
     
-    expert_model = models.build_mobilenet_model(n_classes=10, trainable=False)
+    expert_model = models.build_catsense_prod_model(n_classes=10)
+    expert_model.trainable = False
     expert_model.fit(X_exp, y_exp_train, epochs=10, batch_size=config.BATCH_SIZE, verbose=1)
     
     # 2. Auto-Labeling Stage
@@ -51,7 +52,7 @@ def train_pipeline():
         X_final, y_final_train, test_size=0.15, stratify=y_final_labels, random_state=42
     )
     
-    prod_model = models.build_mobilenet_model(n_classes=10, trainable=True)
+    prod_model = models.build_catsense_prod_model(n_classes=10)
     prod_model.fit(
         X_train, y_train, 
         validation_split=0.1, 

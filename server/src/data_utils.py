@@ -5,7 +5,7 @@ import librosa
 import noisereduce as nr
 import cv2
 from tqdm.auto import tqdm
-import src.config as config
+from . import config
 
 def preprocess_audio(path):
     """

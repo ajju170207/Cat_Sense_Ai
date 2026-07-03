@@ -30,7 +30,6 @@ const FEATURES = [
   },
 ];
 
-
 function Home() {
   const [audioFile, setAudioFile] = useState(null);
   const [emotion, setEmotion] = useState("");
@@ -50,7 +49,7 @@ function Home() {
       const formData = new FormData();
       formData.append("file", audioFile);
 
-      const res = await fetch("http://127.0.0.1:5001/predict", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/predict`, {
         method: "POST",
         body: formData,
       });
@@ -66,9 +65,9 @@ function Home() {
       }
     } catch (err) {
       console.error("Prediction error:", err);
-      const demoEmotions = ["Happy", "Resting", "HuntingMind", "Angry", "Warning"];
-      finalEmotion = demoEmotions[Math.floor(Math.random() * demoEmotions.length)];
-      setEmotion(finalEmotion);
+      alert("Failed to connect to the AI model. Ensure the backend server is running on port 8000.");
+      setLoading(false);
+      return;
     }
 
     try {
@@ -191,6 +190,7 @@ function Home() {
       <section id="demo" className="demo-section">
         <div className="container">
           <div className="section-header centered">
+            <span className="badge">Interactive Analysis</span>
             <h2 className="section-title">Analyze Cat Audio</h2>
             <p className="section-subtitle">
               Upload a recording or speak into your microphone. Our AI will instantly map vocal patterns to emotional states.
@@ -233,6 +233,7 @@ function Home() {
         </div>
       </section>
 
+
       {/* DISEASE ANALYSIS SECTION */}
       <section id="disease" className="disease-section bg-surface">
         <div className="container">
@@ -251,6 +252,7 @@ function Home() {
       <section id="team" className="team-section bg-surface">
         <div className="container">
           <div className="section-header centered">
+            <span className="badge">Our Expertise</span>
             <h2 className="section-title">Built by</h2>
             <p className="section-subtitle">
               404_not_found

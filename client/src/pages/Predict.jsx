@@ -5,6 +5,7 @@ import EmotionCard from "../components/EmotionCard";
 function Predict() {
   const [audioFile, setAudioFile] = useState(null);
   const [emotion, setEmotion] = useState("");
+  const [confidenceScores, setConfidenceScores] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handlePredict = async () => {
@@ -14,50 +15,84 @@ function Predict() {
     }
 
     setLoading(true);
+    setEmotion("");
+    setConfidenceScores(null);
 
     try {
       const formData = new FormData();
       formData.append("file", audioFile);
 
-      const res = await fetch("http://127.0.0.1:5001/predict", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/predict`, {
         method: "POST",
         body: formData,
       });
 
+      if (!res.ok) throw new Error("Prediction failed");
+
       const data = await res.json();
 
-      // backend se emotion lena
       setEmotion(data.emotion);
+      setConfidenceScores(data.confidence_scores);
 
     } catch (error) {
       console.error("Error:", error);
-      alert("Server error! Check backend.");
+      alert("Server error! Make sure the backend is running and the model is loaded.");
     }
 
     setLoading(false);
   };
 
+  const handleReset = () => {
+    setAudioFile(null);
+    setEmotion("");
+    setConfidenceScores(null);
+  };
+
   return (
-    <div className="container">
-      <h1>🎤 Predict Cat Emotion</h1>
+    <div className="container py-2xl">
+      <div className="section-header centered">
+        <span className="badge">AI Analysis</span>
+        <h1 className="section-title">Meow Interpreter</h1>
+        <p className="section-subtitle">
+          Upload a recording of your cat's vocalization to understand their current emotional state using our advanced neural network.
+        </p>
+      </div>
 
-      <AudioUpload setAudioFile={setAudioFile} />
+      <div className="max-w-2xl mx-auto">
+        <AudioUpload setAudioFile={setAudioFile} />
 
-      <button
-        className="btn-primary w-full mt-lg"
-        onClick={handlePredict}
-        disabled={loading}
-      >
-        {loading ? "Predicting..." : "Predict Emotion"}
-      </button>
+        <button
+          className="analyze-btn w-full mt-lg"
+          onClick={handlePredict}
+          disabled={loading || !audioFile}
+        >
+          {loading ? (
+            <>
+              <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> 
+              Analyzing...
+            </>
+          ) : (
+            "Begin Interpretation"
+          )}
+        </button>
 
-      {loading && <p className="mt-md text-center">Analyzing audio... ⏳</p>}
+        {loading && (
+          <div className="loading-bar mt-md">
+            <div className="loading-bar-fill"></div>
+          </div>
+        )}
 
-      <div className="mt-2xl">
-        <EmotionCard emotion={emotion} />
+        <div className="mt-2xl">
+          <EmotionCard 
+            emotion={emotion} 
+            confidenceScores={confidenceScores} 
+            onReset={handleReset} 
+          />
+        </div>
       </div>
     </div>
   );
 }
+
 
 export default Predict;

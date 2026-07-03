@@ -17,15 +17,14 @@ __pycache__/
 .env
 .env.local
 .env.*.local
-! .env.enc
-! .env.example
+.env.enc
+.env.example
 
 # OS files
 .DS_Store
 Thumbs.db
 
 # Large Assets
-models/
 datasets/
 outputs/
 research/outputs/
@@ -33,6 +32,15 @@ research/outputs/
 *.mp3
 *.jpeg
 *.png
+
+# Models (Weights)
+# We ignore the large files and directories, and allow only essential .pkl ones
+models/weights/
+!models/weights/
+models/weights/*/
+models/weights/*.keras
+!models/weights/*.pkl
+!models/weights/label_encoder.pkl
 
 # Logs
 *.log

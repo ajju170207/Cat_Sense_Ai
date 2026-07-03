@@ -14,7 +14,7 @@ EPOCHS = 30
 LEARNING_RATE = 1e-4
 
 # --- Data Paths ---
-PROJECT_ROOT = Path('/Users/ajay/project')
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 EXPERT_POOL_1 = PROJECT_ROOT / 'datasets/expert_collection_1'
 EXPERT_POOL_2 = PROJECT_ROOT / 'datasets/expert_collection_2'
 VOCAL_ARCHIVE = PROJECT_ROOT / 'datasets/audio_vault'

@@ -1,4 +1,4 @@
-# CatSense AI 🐾
+# CatSense AI 🐾 ![Production Ready](https://img.shields.io/badge/Status-Production--Ready-brightgreen)
 
 **Decoding the secret language of cats with advanced AI.**
 

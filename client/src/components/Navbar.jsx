@@ -57,7 +57,11 @@ function Navbar() {
               onClick={() => setDrawerOpen(!drawerOpen)}
               aria-label="Toggle menu"
             >
-              {drawerOpen ? "✕" : "☰"}
+              {drawerOpen ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+              )}
             </button>
             <Link to="/" className="nav-logo" aria-label="CatSense AI Home">
               <CatLogo size={32} color="#000000" />
@@ -70,16 +74,38 @@ function Navbar() {
           {/* Right: Links & Actions */}
           <div className="nav-right">
             {!user && (
-              <>
-                <button className="nav-link-btn" onClick={() => scrollTo("features")}>Features</button>
-                <button className="nav-link-btn" onClick={() => scrollTo("demo")}>Demo</button>
-              </>
+              <div className="hidden md:flex items-center gap-3 mr-4">
+                <button 
+                  className="btn-nav-rect" 
+                  onClick={() => scrollTo("features")}
+                >
+                  Features
+                </button>
+                <button 
+                  className="btn-nav-rect" 
+                  onClick={() => scrollTo("demo")}
+                >
+                  Live Demo
+                </button>
+                <button 
+                  className="btn-nav-rect" 
+                  onClick={() => scrollTo("disease")}
+                >
+                  AI Model
+                </button>
+                <button 
+                  className="btn-nav-rect" 
+                  onClick={() => scrollTo("team")}
+                >
+                  Our Team
+                </button>
+              </div>
             )}
             
             {user ? (
               <>
                 <Link to="/history" className="nav-link">History</Link>
-                <button onClick={handleSignOut} className="btn-outline">Sign Out</button>
+                <button onClick={handleSignOut} className="btn-outline">Log Out</button>
               </>
             ) : (
               <>
@@ -98,7 +124,9 @@ function Navbar() {
               <CatLogo size={28} color="#000000" />
               <div className="logo-text">Cat<span>Sense</span> AI</div>
            </Link>
-           <button className="close-drawer" onClick={() => setDrawerOpen(false)}>✕</button>
+           <button className="close-drawer" onClick={() => setDrawerOpen(false)}>
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+           </button>
         </div>
         
         <div className="drawer-links">
@@ -118,11 +146,23 @@ function Navbar() {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
             Features
           </button>
+          <button onClick={() => scrollTo("demo")} className="drawer-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Live Demo
+          </button>
+          <button onClick={() => scrollTo("disease")} className="drawer-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M21 12H3"/><path d="M12 3v18"/></svg>
+            AI Model
+          </button>
+          <button onClick={() => scrollTo("team")} className="drawer-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Our Team
+          </button>
         </div>
 
         <div className="drawer-footer">
           {user ? (
-            <button onClick={handleSignOut} className="btn-primary w-full">Sign Out</button>
+            <button onClick={handleSignOut} className="btn-primary w-full">Log Out</button>
           ) : (
             <>
               <Link to="/login" className="btn-outline w-full" onClick={() => setDrawerOpen(false)}>Sign In</Link>

@@ -6,9 +6,9 @@ import tempfile
 import uvicorn
 import numpy as np
 from tensorflow import keras
-import src.config as config
-import src.data_utils as data_utils
-from src.models import AttentionLayer
+from . import config
+from . import data_utils
+from .models import AttentionLayer
 
 app = FastAPI(title="CatSense AI API", description="API for Cat Emotion Prediction")
 
@@ -28,29 +28,100 @@ MODEL_DISEASE = None
 # Labels for skin disease
 DISEASE_LABELS = ['Flea Allergy', 'Health', 'Ringworm', 'Scabies']
 
+def load_model_from_pkl(path, is_audio=True):
+    """
+    Rebuilds a Keras model from a pickle file containing weights and config.
+    """
+    import pickle
+    try:
+        with open(path, 'rb') as f:
+            data = pickle.load(f)
+        
+        # Determine architecture based on the config name or class names
+        class_names = data.get('class_names', [])
+        
+        if is_audio:
+            # We use the professionally refined model if it has attention/lstm
+            # otherwise we could fallback, but here we try the robust one first.
+            from src.models import build_professionally_refined_model
+            model = build_professionally_refined_model(n_classes=len(class_names))
+        else:
+            from src.models import build_disease_model
+            model = build_disease_model(n_classes=len(class_names))
+
+        model.set_weights(data['weights'])
+        return model
+    except Exception as e:
+        print(f"Error rebuilding model from {path}: {e}")
+        # Secondary fallback if is_audio (try the simpler one if refined fails)
+        if is_audio:
+            try:
+                from src.models import build_simple_cnn
+                model = build_simple_cnn(n_classes=len(data.get('class_names', [])))
+                model.set_weights(data['weights'])
+                return model
+            except:
+                pass
+        return None
+
 @app.on_event("startup")
 async def load_models():
     global MODEL_EMOTION, MODEL_DISEASE
     
+    # Potential paths for the emotion model (adding the pkl names)
+    emotion_model_names = ['catsense_final_best.pkl', 'catsense_final_best.keras', 'catsense_v1_prod.keras']
+    possible_dirs = [config.MODEL_VAULT, os.path.join(config.PROJECT_ROOT, 'exports'), os.path.join(config.PROJECT_ROOT, 'outputs/models')]
+    
     # Load Emotion Model
-    emotion_path = os.path.join(config.MODEL_VAULT, 'catsense_final_best.keras')
-    try:
-        if os.path.exists(emotion_path):
-            print(f"Loading emotion model from {emotion_path}...")
-            MODEL_EMOTION = keras.models.load_model(emotion_path, custom_objects={'AttentionLayer': AttentionLayer})
-            print("Emotion model loaded successfully.")
-    except Exception as e:
-        print(f"Error loading emotion model: {e}")
+    loaded_emotion = False
+    for model_dir in possible_dirs:
+        if loaded_emotion: break
+        for name in emotion_model_names:
+            path = os.path.join(model_dir, name)
+            if os.path.exists(path):
+                try:
+                    print(f"Attempting to load emotion model from {path}...")
+                    if path.endswith('.keras') or path.endswith('.h5'):
+                        MODEL_EMOTION = keras.models.load_model(path, custom_objects={'AttentionLayer': AttentionLayer})
+                    elif path.endswith('.pkl'):
+                        MODEL_EMOTION = load_model_from_pkl(path, is_audio=True)
+                    
+                    if MODEL_EMOTION:
+                        print(f"Emotion model loaded successfully from {path}.")
+                        loaded_emotion = True
+                        break
+                except Exception as e:
+                    print(f"Failed to load model from {path}: {e}")
+
+    if not loaded_emotion:
+        print("WARNING: No emotion model found in expected locations.")
 
     # Load Disease Model
-    disease_path = os.path.join(config.MODEL_VAULT, 'cat_disease_model.keras')
-    try:
-        if os.path.exists(disease_path):
-            print(f"Loading disease model from {disease_path}...")
-            MODEL_DISEASE = keras.models.load_model(disease_path)
-            print("Disease model loaded successfully.")
-    except Exception as e:
-        print(f"Error loading disease model: {e}")
+    disease_model_names = ['cat_disease_model.pkl', 'cat_disease_model.keras']
+    loaded_disease = False
+    for model_dir in possible_dirs:
+        if loaded_disease: break
+        for name in disease_model_names:
+            path = os.path.join(model_dir, name)
+            if os.path.exists(path):
+                try:
+                    print(f"Attempting to load disease model from {path}...")
+                    if path.endswith('.keras') or path.endswith('.h5'):
+                        MODEL_DISEASE = keras.models.load_model(path)
+                    elif path.endswith('.pkl'):
+                        MODEL_DISEASE = load_model_from_pkl(path, is_audio=False)
+                    
+                    if MODEL_DISEASE:
+                        print(f"Disease model loaded successfully from {path}.")
+                        loaded_disease = True
+                        break
+                except Exception as e:
+                    print(f"Failed to load model from {path}: {e}")
+    
+    if not loaded_disease:
+        print("WARNING: No disease model found in expected locations.")
+
+
 
 @app.post("/predict")
 async def predict_audio(file: UploadFile = File(...)):

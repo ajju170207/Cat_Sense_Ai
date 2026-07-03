@@ -1,6 +1,6 @@
 import os
 from tensorflow import keras
-import src.config as config
+from . import config
 
 @keras.utils.register_keras_serializable()
 class AttentionLayer(keras.layers.Layer):
@@ -60,6 +60,31 @@ def build_professionally_refined_model(n_classes=10):
     return model
 
 
+def build_catsense_prod_model(n_classes=10):
+    """
+    Simpler MobileNetV2 architecture as used in the CatSense_Inference notebook.
+    """
+    base = keras.applications.MobileNetV2(
+        input_shape=(config.IMG_SIZE[0], config.IMG_SIZE[1], 3),
+        include_top=False,
+        weights='imagenet'
+    )
+    base.trainable = True
+    
+    x = keras.layers.GlobalAveragePooling2D()(base.output)
+    x = keras.layers.Dense(256, activation='relu')(x)
+    x = keras.layers.Dropout(0.4)(x)
+    outputs = keras.layers.Dense(n_classes, activation='softmax')(x)
+    
+    model = keras.Model(base.input, outputs)
+    model.compile(
+        optimizer=keras.optimizers.Adam(config.LEARNING_RATE),
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
+    return model
+
+
 def build_simple_cnn(n_classes=10):
     """
     Alternative lightweight CNN for rapid prototyping.
@@ -76,3 +101,24 @@ def build_simple_cnn(n_classes=10):
     ])
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
     return model
+
+
+def build_disease_model(n_classes=4):
+    """
+    Matches the architecture of the provided cat_disease_model.keras.
+    """
+    model = keras.Sequential([
+        keras.layers.Input(shape=(224, 224, 3)),
+        keras.layers.Conv2D(32, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D(2, 2),
+        keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D(2, 2),
+        keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D(2, 2),
+        keras.layers.Flatten(),
+        keras.layers.Dense(128, activation='relu'),
+        keras.layers.Dense(n_classes, activation='softmax')
+    ])
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
