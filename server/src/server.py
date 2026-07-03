@@ -102,7 +102,7 @@ def ensure_model_loaded(model_type):
             keras.backend.clear_session()
             gc.collect()
         
-        emotion_model_names = ['catsense_final_best.pkl', 'catsense_final_best.keras', 'catsense_v1_prod.keras']
+        emotion_model_names = ['catsense_final_best.keras', 'catsense_final_best.pkl', 'catsense_v1_prod.keras']
         for model_dir in possible_dirs:
             for name in emotion_model_names:
                 path = os.path.join(model_dir, name)
