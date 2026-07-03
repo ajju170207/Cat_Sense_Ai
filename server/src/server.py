@@ -8,6 +8,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 # -------------------------------------------------
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import tempfile
@@ -102,7 +103,11 @@ async def predict_audio(background_tasks: BackgroundTasks, file: UploadFile = Fi
     if MODEL_EMOTION_SESSION is None:
         if not IS_LOADING_EMOTION:
             background_tasks.add_task(background_load_model, 'emotion')
-        raise HTTPException(status_code=503, detail="The AI model is currently waking up from sleep (Render Free Tier). Please try again in 10 seconds.")
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "The AI model is currently waking up from sleep (Render Free Tier). Please try again in 10 seconds."},
+            background=background_tasks
+        )
 
     try:
         suffix = os.path.splitext(file.filename)[1]
@@ -138,7 +143,11 @@ async def predict_disease(background_tasks: BackgroundTasks, file: UploadFile = 
     if MODEL_DISEASE_SESSION is None:
         if not IS_LOADING_DISEASE:
             background_tasks.add_task(background_load_model, 'disease')
-        raise HTTPException(status_code=503, detail="The AI model is currently waking up from sleep (Render Free Tier). Please try again in 10 seconds.")
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "The AI model is currently waking up from sleep (Render Free Tier). Please try again in 10 seconds."},
+            background=background_tasks
+        )
 
     try:
         suffix = os.path.splitext(file.filename)[1]
