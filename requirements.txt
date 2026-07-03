@@ -7,4 +7,4 @@ librosa
 noisereduce
 opencv-python-headless
 tqdm
-tensorflow-cpu>=2.15.0
+onnxruntime
