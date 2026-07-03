@@ -16,7 +16,7 @@ except:
     pass
 # -------------------------------------------------
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import tempfile
@@ -44,6 +44,22 @@ MODEL_DISEASE = None
 
 # Labels for skin disease
 DISEASE_LABELS = ['Flea Allergy', 'Health', 'Ringworm', 'Scabies']
+
+IS_LOADING_EMOTION = False
+IS_LOADING_DISEASE = False
+
+def background_load_model(model_type):
+    global IS_LOADING_EMOTION, IS_LOADING_DISEASE
+    if model_type == 'emotion':
+        IS_LOADING_EMOTION = True
+        try: ensure_model_loaded('emotion')
+        except: pass
+        finally: IS_LOADING_EMOTION = False
+    elif model_type == 'disease':
+        IS_LOADING_DISEASE = True
+        try: ensure_model_loaded('disease')
+        except: pass
+        finally: IS_LOADING_DISEASE = False
 
 def load_model_from_pkl(path, is_audio=True):
     import pickle
@@ -128,12 +144,14 @@ async def startup_event():
     print("Server started. Models will load lazily on first request to prevent OOM on Render Free Tier.")
 
 @app.post("/predict")
-async def predict_audio(file: UploadFile = File(...)):
+async def predict_audio(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded")
     
-    if not ensure_model_loaded('emotion'):
-        raise HTTPException(status_code=503, detail="Emotion model not found or failed to load")
+    if MODEL_EMOTION is None:
+        if not IS_LOADING_EMOTION:
+            background_tasks.add_task(background_load_model, 'emotion')
+        raise HTTPException(status_code=503, detail="The AI model is currently waking up from sleep (Render Free Tier). Please try again in 45 seconds.")
 
     try:
         suffix = os.path.splitext(file.filename)[1]
@@ -160,12 +178,14 @@ async def predict_audio(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/predict-disease")
-async def predict_disease(file: UploadFile = File(...)):
+async def predict_disease(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded")
     
-    if not ensure_model_loaded('disease'):
-        raise HTTPException(status_code=503, detail="Disease model not found or failed to load")
+    if MODEL_DISEASE is None:
+        if not IS_LOADING_DISEASE:
+            background_tasks.add_task(background_load_model, 'disease')
+        raise HTTPException(status_code=503, detail="The AI model is currently waking up from sleep (Render Free Tier). Please try again in 45 seconds.")
 
     try:
         suffix = os.path.splitext(file.filename)[1]
