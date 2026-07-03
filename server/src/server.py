@@ -46,20 +46,14 @@ MODEL_DISEASE = None
 DISEASE_LABELS = ['Flea Allergy', 'Health', 'Ringworm', 'Scabies']
 
 def load_model_from_pkl(path, is_audio=True):
-    """
-    Rebuilds a Keras model from a pickle file containing weights and config.
-    """
     import pickle
     try:
         with open(path, 'rb') as f:
             data = pickle.load(f)
         
-        # Determine architecture based on the config name or class names
         class_names = data.get('class_names', [])
         
         if is_audio:
-            # We use the professionally refined model if it has attention/lstm
-            # otherwise we could fallback, but here we try the robust one first.
             from src.models import build_professionally_refined_model
             model = build_professionally_refined_model(n_classes=len(class_names))
         else:
@@ -70,7 +64,6 @@ def load_model_from_pkl(path, is_audio=True):
         return model
     except Exception as e:
         print(f"Error rebuilding model from {path}: {e}")
-        # Secondary fallback if is_audio (try the simpler one if refined fails)
         if is_audio:
             try:
                 from src.models import build_simple_cnn
@@ -81,75 +74,66 @@ def load_model_from_pkl(path, is_audio=True):
                 pass
         return None
 
-@app.on_event("startup")
-async def load_models():
+def ensure_model_loaded(model_type):
     global MODEL_EMOTION, MODEL_DISEASE
-    
-    # Potential paths for the emotion model (adding the pkl names)
-    emotion_model_names = ['catsense_final_best.pkl', 'catsense_final_best.keras', 'catsense_v1_prod.keras']
     possible_dirs = [config.MODEL_VAULT, os.path.join(config.PROJECT_ROOT, 'exports'), os.path.join(config.PROJECT_ROOT, 'outputs/models')]
     
-    # Load Emotion Model
-    loaded_emotion = False
-    for model_dir in possible_dirs:
-        if loaded_emotion: break
-        for name in emotion_model_names:
-            path = os.path.join(model_dir, name)
-            if os.path.exists(path):
-                try:
-                    print(f"Attempting to load emotion model from {path}...")
-                    if path.endswith('.keras') or path.endswith('.h5'):
-                        MODEL_EMOTION = keras.models.load_model(path, custom_objects={'AttentionLayer': AttentionLayer})
-                    elif path.endswith('.pkl'):
-                        MODEL_EMOTION = load_model_from_pkl(path, is_audio=True)
+    if model_type == 'emotion':
+        if MODEL_EMOTION is not None: return True
+        if MODEL_DISEASE is not None:
+            print("Unloading disease model to free memory...")
+            MODEL_DISEASE = None
+            keras.backend.clear_session()
+            gc.collect()
+        
+        emotion_model_names = ['catsense_final_best.pkl', 'catsense_final_best.keras', 'catsense_v1_prod.keras']
+        for model_dir in possible_dirs:
+            for name in emotion_model_names:
+                path = os.path.join(model_dir, name)
+                if os.path.exists(path):
+                    try:
+                        print(f"Loading emotion model from {path}...")
+                        if path.endswith('.keras') or path.endswith('.h5'):
+                            MODEL_EMOTION = keras.models.load_model(path, custom_objects={'AttentionLayer': AttentionLayer})
+                        elif path.endswith('.pkl'):
+                            MODEL_EMOTION = load_model_from_pkl(path, is_audio=True)
+                        if MODEL_EMOTION: return True
+                    except: pass
                     
-                    if MODEL_EMOTION:
-                        print(f"Emotion model loaded successfully from {path}.")
-                        loaded_emotion = True
-                        break
-                except Exception as e:
-                    print(f"Failed to load model from {path}: {e}")
+    elif model_type == 'disease':
+        if MODEL_DISEASE is not None: return True
+        if MODEL_EMOTION is not None:
+            print("Unloading emotion model to free memory...")
+            MODEL_EMOTION = None
+            keras.backend.clear_session()
+            gc.collect()
+            
+        disease_model_names = ['cat_disease_model.pkl', 'cat_disease_model.keras']
+        for model_dir in possible_dirs:
+            for name in disease_model_names:
+                path = os.path.join(model_dir, name)
+                if os.path.exists(path):
+                    try:
+                        print(f"Loading disease model from {path}...")
+                        if path.endswith('.keras') or path.endswith('.h5'):
+                            MODEL_DISEASE = keras.models.load_model(path)
+                        elif path.endswith('.pkl'):
+                            MODEL_DISEASE = load_model_from_pkl(path, is_audio=False)
+                        if MODEL_DISEASE: return True
+                    except: pass
+    return False
 
-    if not loaded_emotion:
-        print("WARNING: No emotion model found in expected locations.")
-
-    # Load Disease Model
-    disease_model_names = ['cat_disease_model.pkl', 'cat_disease_model.keras']
-    loaded_disease = False
-    for model_dir in possible_dirs:
-        if loaded_disease: break
-        for name in disease_model_names:
-            path = os.path.join(model_dir, name)
-            if os.path.exists(path):
-                try:
-                    print(f"Attempting to load disease model from {path}...")
-                    if path.endswith('.keras') or path.endswith('.h5'):
-                        MODEL_DISEASE = keras.models.load_model(path)
-                    elif path.endswith('.pkl'):
-                        MODEL_DISEASE = load_model_from_pkl(path, is_audio=False)
-                    
-                    if MODEL_DISEASE:
-                        print(f"Disease model loaded successfully from {path}.")
-                        loaded_disease = True
-                        break
-                except Exception as e:
-                    print(f"Failed to load model from {path}: {e}")
-    
-    if not loaded_disease:
-        print("WARNING: No disease model found in expected locations.")
-
-    # Force garbage collection to free memory used during model initialization
-    gc.collect()
-
-
+@app.on_event("startup")
+async def startup_event():
+    print("Server started. Models will load lazily on first request to prevent OOM on Render Free Tier.")
 
 @app.post("/predict")
 async def predict_audio(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded")
     
-    if MODEL_EMOTION is None:
-        raise HTTPException(status_code=503, detail="Emotion model not loaded")
+    if not ensure_model_loaded('emotion'):
+        raise HTTPException(status_code=503, detail="Emotion model not found or failed to load")
 
     try:
         suffix = os.path.splitext(file.filename)[1]
@@ -180,17 +164,15 @@ async def predict_disease(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded")
     
-    if MODEL_DISEASE is None:
-        raise HTTPException(status_code=503, detail="Disease model not loaded")
+    if not ensure_model_loaded('disease'):
+        raise HTTPException(status_code=503, detail="Disease model not found or failed to load")
 
     try:
-        # Save temp image
         suffix = os.path.splitext(file.filename)[1]
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             shutil.copyfileobj(file.file, tmp)
             tmp_path = tmp.name
             
-        # Image Preprocessing (224, 224, 3)
         import cv2
         img = cv2.imread(tmp_path)
         if img is None:
@@ -200,12 +182,10 @@ async def predict_disease(file: UploadFile = File(...)):
         img = cv2.resize(img, (224, 224))
         img = img.astype('float32') / 255.0
         
-        # Inference
         pred = MODEL_DISEASE.predict(np.expand_dims(img, 0), verbose=0)
         class_idx = np.argmax(pred)
         label = DISEASE_LABELS[class_idx]
         
-        # Clean up
         os.unlink(tmp_path)
         
         return {
@@ -213,7 +193,6 @@ async def predict_disease(file: UploadFile = File(...)):
             "confidence_scores": dict(zip(DISEASE_LABELS, map(float, pred[0]))),
             "predicted_class": label
         }
-        
     except Exception as e:
         print(f"Server Error (Disease): {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -222,8 +201,9 @@ async def predict_disease(file: UploadFile = File(...)):
 async def health_check():
     return {
         "status": "online", 
-        "emotion_model": MODEL_EMOTION is not None,
-        "disease_model": MODEL_DISEASE is not None
+        "emotion_model_in_mem": MODEL_EMOTION is not None,
+        "disease_model_in_mem": MODEL_DISEASE is not None,
+        "mode": "lazy_loading_swapper"
     }
 
 if __name__ == "__main__":
