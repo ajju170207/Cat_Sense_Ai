@@ -31,7 +31,8 @@ research/outputs/
 *.keras
 *.mp3
 *.jpeg
-*.png
+*.jpeg
+# *.png (Allowing images for UI)
 
 # Models (Weights)
 # We ignore the large files and directories, and allow only essential .pkl ones
