@@ -6,7 +6,7 @@ dist/
 .venv/
 vh/
 bin/
-lib/
+/lib/
 share/
 include/
 __pycache__/
