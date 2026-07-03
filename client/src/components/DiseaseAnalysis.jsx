@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase.js";
  
 const DISEASE_INFO = {
   "Flea Allergy": "Skin irritation caused by flea bites.",

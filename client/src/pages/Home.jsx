@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import heroImg from "../assets/hero-cat.png";
 import AudioUpload from "../components/AudioUpload";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase.js";
 import EmotionCard from "../components/EmotionCard";
 import FeatureCard from "../components/FeatureCard";
 import Footer from "../components/Footer";
