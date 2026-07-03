@@ -55,6 +55,13 @@ function Home() {
       });
 
       const data = await res.json();
+      
+      if (!res.ok) {
+        alert(data.detail || "Failed to analyze audio.");
+        setLoading(false);
+        return;
+      }
+
       finalEmotion = data.emotion || data.predicted_class || "Unknown";
       const scores = data.confidence_scores || data.probabilities || null;
       setEmotion(finalEmotion);

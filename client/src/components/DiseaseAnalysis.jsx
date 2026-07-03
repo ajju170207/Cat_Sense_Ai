@@ -32,6 +32,13 @@ function DiseaseAnalysis() {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/predict-disease`, { method: "POST", body: formData });
       data = await res.json();
+      
+      if (!res.ok) {
+        alert(data.detail || "Failed to analyze skin image.");
+        setLoading(false);
+        return;
+      }
+      
       setResult(data);
     } catch (e) {
       alert("Failed to analyze. Ensure backend is running.");

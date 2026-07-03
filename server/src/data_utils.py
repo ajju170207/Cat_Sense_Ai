@@ -12,7 +12,7 @@ def preprocess_audio(path):
     Standard preprocessing pipeline: Load -> Resample -> Denoise -> Normalize -> Pad/Trim
     """
     y, _ = librosa.load(path, sr=config.SR)
-    y = nr.reduce_noise(y=y, sr=config.SR, prop_decrease=0.7)
+    # y = nr.reduce_noise(y=y, sr=config.SR, prop_decrease=0.7) # Disabled for Render Free Tier stability
     y = librosa.util.normalize(y)
     t_len = int(config.SR * config.DURATION)
     y = np.pad(y, (0, max(0, t_len - len(y))), mode='constant')[:t_len]
